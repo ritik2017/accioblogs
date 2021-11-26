@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const constants = require('./constants');
+const constants = require('./private_constants');
 
 mongoose.connect(constants.mongoURI, {
     useNewUrlParser: true,

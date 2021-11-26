@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./db');
-const constants = require('./constants');
+const constants = require('./private_constants');
 
 const app = express();
 
