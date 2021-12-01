@@ -1,5 +1,7 @@
 const UserSchema = require('../Schemas/User');
 const bcrypt = require('bcrypt');
+const validator = require('validator');
+const ObjectId = require('mongodb').ObjectId;
 
 // Username, Email
 
@@ -19,44 +21,82 @@ let User = class {
         this.profilePic = profilePic;
     }
 
-    static async verifyUsernameAndEmailExists({username, email}) {
+    static verifyUsernameAndEmailExists({username, email}) {
+        return new Promise(async (resolve, reject) => {
 
-        try {
-        
-            const user = await UserSchema.findOne({$or: [{username}, {email}]});
-
-            if(user && user.email === email) {
-                return {
-                    valid: true,
-                    error: "Email already exists"
+            try {
+                const user = await UserSchema.findOne({$or: [{username}, {email}]});
+    
+                if(user && user.email === email) {
+                    return reject('Email already exists');
                 }
-            }
-
-            if(user && user.username === username) {
-                return {
-                    valid: true,
-                    error: "Username already taken"
+    
+                if(user && user.username === username) {
+                    return reject('Username already taken');
                 }
+    
+                return resolve();
+            }
+            catch(err) {
+                return reject(err);
+            }
+        })
+    }
+
+    static verifyUserId({userId}) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Not a valid mongodb id - reject rightaway
+                if(!ObjectId.isValid(userId)) {
+                    reject("Not a valid userId");
+                }
+
+                // Valid ObjectId but not of a user in our db 
+                const dbUser = await UserSchema.findOne({_id: ObjectId(userId)});
+                if(!dbUser) {
+                    reject("No user found");
+                } 
+                resolve(dbUser);
+            }
+            catch(err) {
+                reject(err);
+            }
+        })
+    }
+
+    static loginUser({loginId, password}) {
+        return new Promise(async (resolve, reject) => {
+            let dbUser = {};
+            if(validator.isEmail(loginId)) {
+                dbUser = await UserSchema.findOne({email: loginId});
+            }
+            else {
+                dbUser = await UserSchema.findOne({username: loginId});
             }
 
-            return {
-                valid: false
+            if(!dbUser) {
+                return reject("No user found");
             }
-        }
-        catch(err) {
-            return {
-                db_error: true,
-                error: err
+
+            // Match the password
+            const isMatch = await bcrypt.compare(password, dbUser.password);
+
+            if(!isMatch) {
+                return reject("Invalid Password");
             }
-        }
+            resolve(dbUser);
+        })
     }
 
     registerUser() {
         return new Promise(async (resolve, reject) => {
+
+            const hashedPassword = await bcrypt.hash(this.password, 15);
+
             const user = new UserSchema({
                 username: this.username,
                 email: this.email,
-                password: this.password,
+                password: hashedPassword,
                 name: this.name,
                 phoneNumber: this.phoneNumber,
                 profilePic: this.profilePic

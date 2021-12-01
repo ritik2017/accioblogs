@@ -10,6 +10,7 @@ const MongoDBSession = require('connect-mongodb-session')(session);
 
 // Controllers Routes
 const AuthRouter = require('./Controllers/Auth');
+const BlogsRouter = require('./Controllers/Blogs');
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -36,6 +37,58 @@ app.get('/', (req, res) => {
 // Authentication Router
 app.use('/auth', AuthRouter);
 
+// Blogs Router
+app.use('/blogs', BlogsRouter);
+
 app.listen(constants.PORT, () => {
     console.log(`Listening on port ${constants.PORT}`)
 })
+
+
+/**
+ * let obj = {
+ *     "name": "Ritik",
+ *     "birthDetails": {
+ *          "dob"
+ *      }
+ *      "education" {
+ *          "college"    
+ *      }
+ * }
+ * 
+ * {
+ *      ...obj.birthDetails
+ *      ...obj.education
+ *      "name": obj.name,
+ *
+ * }
+ * 
+ * {
+ *      "name"
+ *      "dob"
+ *      "college"
+ * }
+ * 
+ * Object.keys(obj).forEach(key => {
+ *      console.log(key);
+ * })
+ * 
+ * [1, [1,2,3], [4,5,[6,2]], [], []]
+ * 
+ */
+
+// // 1, 1, 2, 3, 4, 5, 6, 2
+// function traverseArray(arr, ind) {
+//     if(ind === arr.length) 
+//         return; 
+//     if(typeof(arr[ind]) == "number") {
+//         console.log(arr[ind]);
+//         traverseArray(arr, ind+1);
+//         return;
+//     }
+
+//     traverseArray(arr[ind], 0); // 1,2,3
+//     traverseArray(arr, ind+1);
+// }
+
+// traverseArray(arr, 0);

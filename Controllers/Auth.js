@@ -4,42 +4,37 @@ const validator = require('validator');
 const User = require('../Models/User');
 
 function cleanUpAndValidate({email, username, phoneNumber, password}) {
+    return new Promise((resolve, reject) => {
+        if(typeof(email) !== "string") {
+            return reject("Email is not string");
+        }
 
-    try {
         if(!validator.isEmail(email)) {
-            throw "Invalid Email";
+            return reject("Invalid Email");
         }   
 
         if(username.length < 3) {
-            throw "Username too short";
+            return reject("Username too short");
         }
 
         if(username.length > 30) {
-            throw "Username too long";
+            return reject("Username too long");
         }
 
         if(phoneNumber && phoneNumber.length !== 10) {
-            throw "Phone number not valid";
+            return reject("Phone number not valid");
         }
 
         if(password && password < 6) {
-            throw "Password too short";
+            return reject("Password too short");
         }
 
         if(password && !validator.isAlphanumeric(password)) {
-            throw "Password should contain alphabet and numbers";
+            return reject("Password should contain alphabet and numbers");
         }
 
-        return {
-            valid: true
-        };
-    }
-    catch(err) {
-        return {
-            valid: false,
-            error: err
-        };
-    }
+        return resolve();
+    });
 }
 
 
@@ -48,60 +43,86 @@ AuthRouter.post('/register', async (req, res) => {
     const { email, username, password, name, phoneNumber, profilePic } = req.body;
 
     // Validate data
-    const validData = cleanUpAndValidate({email, username, phoneNumber, password});
+    cleanUpAndValidate({email, username, phoneNumber, password}).then(async () => {
 
-    if(!validData.valid) {
+        // Validate if user is already registered
+        try {
+            await User.verifyUsernameAndEmailExists({username, email});
+        }
+        catch(err) {
+            return res.send({
+                status: 401,
+                message: "Error Occured",
+                error: err
+            })
+        }
+
+        // Save the data in db
+
+        const user = new User( { email, username, password, name, phoneNumber, profilePic } );
+
+        try {
+            const dbUser = await user.registerUser();
+
+            // Newletter, Welcome email
+
+            return res.send({
+                status: 200,
+                message: "Registration Successfull",
+                data: dbUser
+            })
+        }
+        catch(err) {
+            return res.send({
+                status: 401,
+                message: "Internal error",
+                error: err
+            })
+        }
+
+    }).catch((err) => {
         return res.send({
             status: 400,
             message: "Invalid Data",
-            error: validData.error
-        });
-    }
+            error: err
+        })
+    })
+})
 
-    // Validate if user is already registered
+AuthRouter.post('/login', async (req, res) => {
+    const { loginId, password } = req.body;
 
-    const userAlreadyExists = await User.verifyUsernameAndEmailExists({username, email});
-
-    if(userAlreadyExists.db_error) {
+    if(!loginId || !password) {
         return res.send({
             status: 401,
-            message: "Database error",
-            error: userAlreadyExists.error
+            message: "Invalid Credentials"
         })
     }
-
-    if(userAlreadyExists.valid) {
-        return res.send({
-            status: 400,
-            message: "User already exists",
-            error: userAlreadyExists.error
-        })
-    }
-
-    // Save the data in db
-
-    const user = new User( { email, username, password, name, phoneNumber, profilePic } );
-
+    
     try {
-        const dbUser = await user.registerUser();
+        const dbUser = await User.loginUser({loginId, password});
+
+        req.session.isAuth = true;
+        req.session.user = {
+            _id: dbUser._id,
+            email: dbUser.email,
+            username: dbUser.username, 
+            name: dbUser.name
+        };
 
         return res.send({
             status: 200,
-            message: "Registration Successfull",
+            message: "Login Successful",
             data: dbUser
         })
     }
     catch(err) {
         return res.send({
-            status: 401,
-            message: "Internal error",
-            error: err
+            status: 400,
+            message: "Error Occured",
+            errror: err 
         })
     }
-})
-
-AuthRouter.post('/login', (req, res) => {
-
 })
 
 module.exports = AuthRouter;

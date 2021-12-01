@@ -21,5 +21,5 @@ const blogsSchema = new Schema({
     images: [String]
 })
 
-modules.export = mongoose.model('Blogs', blogsSchema);
+module.exports = mongoose.model('Blogs', blogsSchema);
 
