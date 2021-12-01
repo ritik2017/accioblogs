@@ -104,7 +104,7 @@ AuthRouter.post('/login', async (req, res) => {
 
         req.session.isAuth = true;
         req.session.user = {
-            _id: dbUser._id,
+            userId: dbUser._id,
             email: dbUser.email,
             username: dbUser.username, 
             name: dbUser.name

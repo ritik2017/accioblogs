@@ -1,15 +1,19 @@
 const BlogsSchema = require('../Schemas/Blogs');
+const constants = require('../constants');
+const ObjectId = require('mongodb').ObjectId
 
 const Blogs = class {
     title;
     bodyText;
     userId;
     creationDatetime;
-    constructor({title, bodyText, userId, creationDatetime}) {
+    blogId;
+    constructor({blogId, title, bodyText, userId, creationDatetime}) {
         this.title = title;
         this.bodyText = bodyText;
         this.userId = userId;
         this.creationDatetime = creationDatetime;
+        this.blogId = blogId;
     }
 
     createBlog() {
@@ -34,15 +38,52 @@ const Blogs = class {
         })
     }
 
-    static getBlogs() {
+    static getBlogs({offset}) {
         return new Promise(async (resolve, reject) => {
             try {
-                const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
+                // const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
+
+                const dbBlogs = await BlogsSchema.aggregate([
+                    { $sort: { "creationDatetime": -1 } },
+                    { $facet: {
+                        data: [{ "$skip": parseInt(offset) }, { "$limit": constants.BLOGSLIMIT }]
+                    } }
+                ])
                 resolve(dbBlogs);                
             }
             catch(err) {
                 reject(err);
             }
+        })
+    }
+
+    static myBlogs({userId, offset}) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
+
+                const dbBlogs = await BlogsSchema.aggregate([
+                    { $match: { userId: ObjectId(userId) } },
+                    { $sort: { "creationDatetime": -1 } },
+                    { $facet: {
+                        data: [{ "$skip": parseInt(offset) }, { "$limit": constants.BLOGSLIMIT }]
+                    } }
+                ])
+                resolve(dbBlogs);                
+            }
+            catch(err) {
+                reject(err);
+            }
+        })
+    }
+
+    getUserIdOfBlog() {
+        return new Promise(async (resolve, reject) => {
+            const blogUserId = await BlogsSchema.aggregate([
+                { $match: {_id: ObjectId(this.blogId)} },
+                { $project: { userId: 1 } }
+            ])
+            resolve(blogUserId[0].userId);
         })
     }
 }

@@ -68,8 +68,11 @@ BlogsRouter.post('/create-blog', async (req, res) => {
 })
 
 BlogsRouter.get('/get-blogs', async (req, res) => {
+
+    const offset = req.query.offset || 0;
+
     try {
-        const dbBlogs = await Blogs.getBlogs();
+        const dbBlogs = await Blogs.getBlogs({offset});
 
         res.send({
             status: 200,
@@ -81,6 +84,72 @@ BlogsRouter.get('/get-blogs', async (req, res) => {
         res.send({
             status: 401,
             message: "Error Occured",
+            error: err
+        })
+    }
+})
+
+BlogsRouter.get('/my-blogs/:userId/:offset', async (req, res) => {
+
+    const userId = req.params.userId;
+    const offset = req.params.offset || 0;
+
+    console.log(userId, offset);
+
+    try {
+        const dbBlogs = await Blogs.myBlogs({userId, offset});
+
+        return res.send({
+            status: 200,
+            message: "Successful",
+            data: dbBlogs
+        })
+    }
+    catch(err) {
+        return res.send({
+            status: 400,
+            message: "Internal error occured",
+            error: err
+        })
+    }
+})
+
+BlogsRouter.post('/edit-blog', async (req, res) => {
+
+    const { title, bodyText } = req.body.data;
+    const blogId = req.body.blogId;
+    const userId = req.body.userId; // req.session.user.userId
+
+    // User is allowed to edit this blog - If he has created the blog
+    // Check the creationDatetime is within 30 mins
+    // Update the blog in db
+
+    try {
+        
+        const blog = new Blogs({blogId});
+        const blogUserId = await blog.getUserIdOfBlog();
+
+        console.log(blogUserId, "  ", userId);
+
+        if(blogUserId != userId) {
+            return res.send({
+                status: 404,
+                message: "Not allowed to edit",
+                error: "Blog belong to some other user"
+            })
+        }
+
+        return res.send({
+            status: 200,
+            message: "Edit Successful",
+            data: {}
+        })
+
+    }
+    catch(err) {
+        res.send({
+            status: "400",
+            message: "Failed to edit the blog",
             error: err
         })
     }
