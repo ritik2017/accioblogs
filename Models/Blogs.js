@@ -77,15 +77,44 @@ const Blogs = class {
         })
     }
 
-    getUserIdOfBlog() {
+    getDataOfBlogFromBlogId() {
         return new Promise(async (resolve, reject) => {
             const blogUserId = await BlogsSchema.aggregate([
                 { $match: {_id: ObjectId(this.blogId)} },
-                { $project: { userId: 1 } }
+                { $project: { userId: 1, creationDatetime: 1 } }
             ])
-            resolve(blogUserId[0].userId);
+            resolve(blogUserId[0]);
+        })
+    }
+
+    updateBlog() {
+        return new Promise(async (resolve, reject) => {
+            
+            let newBlogData = {};
+            if(this.title) {
+                newBlogData.title = this.title;
+            }
+
+            if(this.bodyText) {
+                newBlogData.bodyText = this.bodyText;
+            }
+
+            try {
+                const oldDbdData = await BlogsSchema.findOneAndUpdate({_id: ObjectId(this.blogId)}, newBlogData);
+                return resolve(oldDbdData);
+            }
+            catch(err) {
+                return reject("Database error");
+            }
+        })
+    }
+
+    deleteBlog() {
+        return new Promise(async (resolve, reject) => {
+            const blogData = await BlogsSchema.findOneAndDelete({_id: ObjectId(this.blogId)});
+            resolve(blogData);
         })
     }
 }
 
-module.exports = Blogs;
+module.exports = Blogs; 

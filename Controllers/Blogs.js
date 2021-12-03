@@ -120,18 +120,24 @@ BlogsRouter.post('/edit-blog', async (req, res) => {
     const blogId = req.body.blogId;
     const userId = req.body.userId; // req.session.user.userId
 
-    // User is allowed to edit this blog - If he has created the blog
-    // Check the creationDatetime is within 30 mins
-    // Update the blog in db
+    if(!title && !bodyText) {
+        return res.send({
+            status: 400,
+            message: "Insufficient data",
+            error: "Missing title and bodyText"
+        })
+    }
 
     try {
         
-        const blog = new Blogs({blogId});
-        const blogUserId = await blog.getUserIdOfBlog();
+        // User is allowed to edit this blog - If he has created the blog
 
-        console.log(blogUserId, "  ", userId);
+        const blog = new Blogs({blogId, title, bodyText});
+        const dbBlogData = await blog.getDataOfBlogFromBlogId();
 
-        if(blogUserId != userId) {
+        console.log(dbBlogData);
+
+        if(dbBlogData.userId != userId) {
             return res.send({
                 status: 404,
                 message: "Not allowed to edit",
@@ -139,10 +145,29 @@ BlogsRouter.post('/edit-blog', async (req, res) => {
             })
         }
 
+        // Check the creationDatetime is within 30 mins
+        const currentDateTime = Date.now();
+        const creationDatetime = new Date(dbBlogData.creationDatetime);
+        const diff = ( currentDateTime - creationDatetime.getTime() ) / (60*1000);
+
+        console.log(diff);
+
+        if(diff > 30) {
+            return res.send({
+                status: "401",
+                message: "Edit unsuccessful",
+                error: "Cannot edit blogs after 30 minutes of creation"
+            })
+        }
+
+        // Update the blog in db
+
+        const oldDbBlog = await blog.updateBlog();
+
         return res.send({
             status: 200,
             message: "Edit Successful",
-            data: {}
+            data: oldDbBlog
         })
 
     }
@@ -153,6 +178,43 @@ BlogsRouter.post('/edit-blog', async (req, res) => {
             error: err
         })
     }
+})
+
+BlogsRouter.post('/delete-blog', async (req, res) => {
+    
+    const blogId = req.body.blogId;
+    const userId = req.body.userId; // req.session.user.userId
+
+    try {
+
+        const blog = new Blogs({blogId});
+        const dbBlogData = await blog.getDataOfBlogFromBlogId();
+        
+        if(userId != dbBlogData.userId) {
+            return res.send({
+                status: "401",
+                message: "Delete Unsuccessful",
+                error: "Blog belongs to some other user"
+            })
+        }
+
+        const blogData = await blog.deleteBlog();
+
+        return res.send({
+            status: 200,
+            message: "Delete Successful",
+            data: blogData
+        })
+
+    }
+    catch(err) {
+        return res.send({
+            status: 400,
+            message: "Delete Unsuccessful",
+            error: err
+        })
+    }
+
 })
 
 module.exports = BlogsRouter;
