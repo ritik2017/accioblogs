@@ -11,6 +11,7 @@ const MongoDBSession = require('connect-mongodb-session')(session);
 // Controllers Routes
 const AuthRouter = require('./Controllers/Auth');
 const BlogsRouter = require('./Controllers/Blogs');
+const FollowRouter = require('./Controllers/Follow');
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -39,6 +40,9 @@ app.use('/auth', AuthRouter);
 
 // Blogs Router
 app.use('/blogs', BlogsRouter);
+
+// Follow Router
+app.use('/follow', FollowRouter);
 
 app.listen(constants.PORT, () => {
     console.log(`Listening on port ${constants.PORT}`)
