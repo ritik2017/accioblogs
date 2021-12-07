@@ -9,6 +9,10 @@ const followSchema = new Schema({
     followerUserId: {
         type: String,
         required: true
+    },
+    creationDatetime: {
+        type: String,
+        required: true  
     }
 })
 
