@@ -38,18 +38,20 @@ const Blogs = class {
         })
     }
 
-    static getBlogs({offset}) {
+    static getBlogs({offset, userIds}) {
         return new Promise(async (resolve, reject) => {
             try {
                 // const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
 
                 const dbBlogs = await BlogsSchema.aggregate([
+                    { $match: { userId: { $in: userIds } } },
                     { $sort: { "creationDatetime": -1 } },
                     { $facet: {
                         data: [{ "$skip": parseInt(offset) }, { "$limit": constants.BLOGSLIMIT }]
                     } }
                 ])
-                resolve(dbBlogs);                
+
+                resolve(dbBlogs[0].data);                
             }
             catch(err) {
                 reject(err);

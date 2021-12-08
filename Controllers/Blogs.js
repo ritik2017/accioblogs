@@ -2,6 +2,9 @@ const express = require('express');
 const BlogsRouter = express.Router();
 const Blogs = require('../Models/Blogs');
 const User = require('../Models/User');
+const { followingUsers } = require('../Models/Follow');
+const { validateMongoUserIds } = require('../Utils/FollowUtils');
+const ObjectId = require('mongodb').ObjectId;
 
 BlogsRouter.post('/create-blog', async (req, res) => {
     const userId = req.body.userId;
@@ -70,18 +73,49 @@ BlogsRouter.post('/create-blog', async (req, res) => {
 BlogsRouter.get('/get-blogs', async (req, res) => {
 
     const offset = req.query.offset || 0;
+    const userId = req.query.userId; // req.session.user.userId
+
+    if(!validateMongoUserIds([userId])) {
+        return res.send({
+            status: 400,
+            message: "Invalid User",
+            error: "Invalid Mongo UserId"
+        })
+    }
 
     try {
-        const dbBlogs = await Blogs.getBlogs({offset});
 
-        res.send({
+        const followingUserList = await followingUsers({followerUserId: ObjectId(userId)});
+
+        let userIds = [];
+        followingUserList.forEach((user) => {
+            userIds.push(ObjectId(user._id));
+        })
+
+        const dbBlogs = await Blogs.getBlogs({offset, userIds});
+
+        let blogAndUserDetails = [];
+
+        dbBlogs.forEach((blog) => { // 20 times
+            followingUserList.forEach(user => {
+                if(user._id.toString() === blog.userId.toString()) { // Mongo Ids cannot be comapred with equals
+                    let blogAndUserDetail = {
+                        ...blog,
+                        userDetails: user
+                    }
+                    blogAndUserDetails.push(blogAndUserDetail);
+                }
+            })
+        })
+
+        return res.send({
             status: 200,
             message: "Successful",
-            data: dbBlogs
+            data: blogAndUserDetails
         })
     }
     catch(err) {
-        res.send({
+        return res.send({
             status: 401,
             message: "Error Occured",
             error: err

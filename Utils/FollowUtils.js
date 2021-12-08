@@ -2,8 +2,7 @@ const ObjectId = require('mongodb').ObjectId;
 
 function validateMongoUserIds(userIds) {
 
-    userIds.forEach(userId => {
-        
+    for(let userId of userIds) {
         if(!userId) {
             return false;
         }
@@ -11,7 +10,7 @@ function validateMongoUserIds(userIds) {
         if(!ObjectId.isValid(userId)) {
             return false;
         }
-    });
+    }
 
     return true;
 }

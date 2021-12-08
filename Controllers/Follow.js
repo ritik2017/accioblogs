@@ -35,6 +35,7 @@ FollowRouter.post('/follow-user', async (req, res) => {
     }
 })
 
+// TODO: Paginate the API
 FollowRouter.post('/following', async (req, res) => {
 
     const followerUserId = req.body.followerUserId; // req.session.user.userId
@@ -65,6 +66,7 @@ FollowRouter.post('/following', async (req, res) => {
     }
 })
 
+// TODO: Paginate the API
 FollowRouter.post('/followers', async (req, res) => {
 
     const followingUserId = req.body.followingUserId; // req.session.user.userId;
