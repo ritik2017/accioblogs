@@ -44,7 +44,7 @@ const Blogs = class {
                 // const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
 
                 const dbBlogs = await BlogsSchema.aggregate([
-                    { $match: { userId: { $in: userIds } } },
+                    { $match: { userId: { $in: userIds }, deleted: {$ne: true} } },
                     { $sort: { "creationDatetime": -1 } },
                     { $facet: {
                         data: [{ "$skip": parseInt(offset) }, { "$limit": constants.BLOGSLIMIT }]
@@ -65,7 +65,7 @@ const Blogs = class {
                 // const dbBlogs = await BlogsSchema.find().sort({creationDatetime: -1});
 
                 const dbBlogs = await BlogsSchema.aggregate([
-                    { $match: { userId: ObjectId(userId) } },
+                    { $match: { userId: ObjectId(userId), deleted: {$ne: true} } },
                     { $sort: { "creationDatetime": -1 } },
                     { $facet: {
                         data: [{ "$skip": parseInt(offset) }, { "$limit": constants.BLOGSLIMIT }]
@@ -113,7 +113,9 @@ const Blogs = class {
 
     deleteBlog() {
         return new Promise(async (resolve, reject) => {
-            const blogData = await BlogsSchema.findOneAndDelete({_id: ObjectId(this.blogId)});
+            // const blogData = await BlogsSchema.findOneAndDelete({_id: ObjectId(this.blogId)});
+
+            const blogData = await BlogsSchema.findOneAndUpdate({_id: ObjectId(this.blogId)}, { deleted: true, deletionDatetime: new Date() });            
             resolve(blogData);
         })
     }

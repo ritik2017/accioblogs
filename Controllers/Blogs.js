@@ -224,6 +224,7 @@ BlogsRouter.post('/delete-blog', async (req, res) => {
         const blog = new Blogs({blogId});
         const dbBlogData = await blog.getDataOfBlogFromBlogId();
         
+        // Check if blog belongs to the user
         if(userId != dbBlogData.userId) {
             return res.send({
                 status: "401",
@@ -232,6 +233,7 @@ BlogsRouter.post('/delete-blog', async (req, res) => {
             })
         }
 
+        // Deleting the blog
         const blogData = await blog.deleteBlog();
 
         return res.send({

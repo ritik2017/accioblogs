@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('./db');
 const constants = require('./private_constants');
+const { cleanUpBin } = require('./cron');
 
 const app = express();
 
@@ -45,7 +46,8 @@ app.use('/blogs', BlogsRouter);
 app.use('/follow', FollowRouter);
 
 app.listen(constants.PORT, () => {
-    console.log(`Listening on port ${constants.PORT}`)
+    console.log(`Listening on port ${constants.PORT}`);
+    cleanUpBin();
 })
 
 
